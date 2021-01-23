@@ -71,7 +71,7 @@ proc fillUnsafe(data: var seq[ColorRGBA], rgba: ColorRGBA, start, len: int) =
     nimSetMem(data[start].addr, rgba.r.cint, len * 4)
   else:
     var i = start
-    when defined(amd64):
+    when defined(amd64) and not defined(pixieNoSimd):
       # When supported, SIMD fill until we run out of room
       let m = mm_set1_epi32(cast[int32](rgba))
       for j in countup(i, start + len - 8, 8):
@@ -169,7 +169,7 @@ proc draw*(a, b: Image, pos = vec2(0, 0), blendMode = bmNormal) {.inline.}
 proc invert*(image: Image) =
   ## Inverts all of the colors and alpha.
   var i: int
-  when defined(amd64):
+  when defined(amd64) and not defined(pixieNoSimd):
     let vec255 = mm_set1_epi8(255)
     while i < image.data.len - 4:
       var m = mm_loadu_si128(image.data[i].addr)
@@ -187,7 +187,7 @@ proc invert*(image: Image) =
 proc toAlphy*(image: Image) =
   ## Converts an image to premultiplied alpha from straight.
   var i: int
-  when defined(amd64):
+  when defined(amd64) not defined(pixieNoSimd):
     # When supported, SIMD convert as much as possible
     let
       alphaMask = mm_set1_epi32(cast[int32](0xff000000))
